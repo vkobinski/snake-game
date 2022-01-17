@@ -32,12 +32,76 @@ class SnakeGame : public olc::PixelGameEngine
 
     private:
     Snake pSnake;
+    private:
+    float tongueTime = 0;
 
     private:
-    void drawSnake(){
-        for (auto const& i : pSnake.posList) {
-            DrawRect(i, olc::vi2d(pSnake.blockSize,pSnake.blockSize), olc::WHITE);
+    void drawSnake(float fElapsedTime){
+        olc::vi2d front = pSnake.posList.front();
+        int xSize = 10;
+        int ySize = 5;
+        float bodyAngle;
+        int aux;
+        switch (pSnake.direction.x)
+        {
+        case 1:
+            front.x += (pSnake.blockSize);
+            front.y += (pSnake.blockSize/2);
+            break;
+        case -1:
+            front.x -= xSize;
+            front.y += (pSnake.blockSize/2);
+        default:
+            break;
         }
+        switch (pSnake.direction.y)
+        {
+        case 1:
+            aux = xSize;
+            xSize = ySize;
+            ySize = aux;
+            front.x += ((pSnake.blockSize/2) - (xSize /2));
+            front.y += (pSnake.blockSize);
+            break;
+        case -1:
+            aux = xSize;
+            xSize = ySize;
+            ySize = aux;
+            front.x += ((pSnake.blockSize/2) - (xSize /2));
+            front.y -= ySize;
+            break;
+        default:
+            break;
+        }
+
+        olc::vi2d size = olc::vi2d(xSize, ySize);
+
+        if(tongueTime >= 1.8f){
+            FillRect( front, size, olc::RED);
+            tongueTime = 0;
+        }
+        else if(tongueTime >= 1.2f){
+            FillRect(front, size, olc::RED);
+        }
+
+        int bodySelect = 5;
+        for (auto const& i : pSnake.posList) {
+            //FillRect(i, olc::vi2d(pSnake.blockSize,pSnake.blockSize), olc::GREEN);
+            if(pSnake.posList.front() == i){
+                FillRect(i, olc::vi2d(pSnake.blockSize, pSnake.blockSize), olc::GREEN);
+                bodySelect = 0;
+            }
+            else if(bodySelect == 0){
+                bodySelect = 1;
+                FillRect(i, olc::vi2d(pSnake.blockSize, pSnake.blockSize), olc::DARK_GREEN);
+            }
+            else if(bodySelect == 1){
+                bodySelect = 0;
+                FillRect(i, olc::vi2d(pSnake.blockSize, pSnake.blockSize), olc::GREEN);
+            }
+        }
+
+        tongueTime += fElapsedTime;
     }
 
     private:
@@ -101,8 +165,8 @@ class SnakeGame : public olc::PixelGameEngine
             int new_x;
             int new_y;   
             while(inside_snake){
-                new_x = rand() % ScreenWidth();
-                new_y = rand() % ScreenHeight();
+                new_x = rand() % (ScreenWidth());
+                new_y = rand() % (ScreenHeight());
 
                 for(auto& pos : pSnake.posList){
                     if(PointInSquare(pos, olc::vi2d(new_x, new_y))){
@@ -138,28 +202,18 @@ class SnakeGame : public olc::PixelGameEngine
     }
     
     private:
-    bool PointInSquareApple(olc::vi2d posSquare) {
-        
-        olc::vi2d squareApple = olc::vi2d(applePos.x + pSnake.blockSize, applePos.y + pSnake.blockSize);
-
-        for(int y = 0; y < posSquare.y + pSnake.blockSize; y+=2){
-            for(int x = 0; x < posSquare.x + pSnake.blockSize; x+=2){
-                if(applePos.x <= x && squareApple.x >= x && applePos.y <= y && squareApple.y >= y){
+    bool PointInSquareApple(olc::vi2d posSquare) {        
+        int bS = pSnake.blockSize;
+        if(applePos.x <= posSquare.x + bS && applePos.x >= posSquare.x && applePos.y <= posSquare.y + bS && applePos.y >= posSquare.y){
                     return true;
-                }
-            }
         }
         return false;
     }
 
     bool PointInSquare(olc::vi2d posSquare, olc::vi2d posTest) {
-        
-        for(int y = 0; y < posSquare.y + pSnake.blockSize; y++){
-            for(int x = 0; x < posSquare.x + pSnake.blockSize; x++){
-                if(posTest.x == x && posTest.y == y){
+        int bS = pSnake.blockSize;
+        if(posTest.x <= posSquare.x + bS && posTest.x >= posSquare.x && posTest.y <= posSquare.y + bS && posTest.y >= posSquare.y){
                     return true;
-                }
-            }
         }
         return false;
     }
@@ -190,6 +244,7 @@ class SnakeGame : public olc::PixelGameEngine
         lose  = false;
         won   = false;
         apple = false;
+
 		return true;
 	}
 
@@ -224,10 +279,13 @@ class SnakeGame : public olc::PixelGameEngine
             testAppleHit();
             createApple();
         }
-        drawSnake();
+        drawSnake(fElapsedTime);
 
-        if(apple)
-            FillCircle(applePos, 4, olc::RED);
+        if(apple){
+            FillCircle(olc::vi2d(applePos.x-2,applePos.y-7), 3, olc::GREEN);
+            FillCircle(olc::vi2d(applePos.x+2,applePos.y-7), 2, olc::GREEN);
+            FillCircle(applePos, 5, olc::RED);
+        }
         if(lose){
             DrawString(olc::vi2d(ScreenWidth()/2 - ((GetTextSize("Game Over").x/2)*4), ScreenHeight()/2 - ((GetTextSize("Game Over").y/2)*4)), "Game Over", olc::WHITE, 4U);
             DrawString(olc::vi2d(ScreenWidth()/2 - ((GetTextSize("Press R to Restart").x/2)*2), (ScreenHeight()/2 + 40) - ((GetTextSize("Press R to Restart").y/2)*2)), "Press R to Restart", olc::WHITE, 2U);
